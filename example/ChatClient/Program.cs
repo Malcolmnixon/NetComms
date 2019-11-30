@@ -16,7 +16,7 @@ namespace ChatClient
             var provider = new TcpProvider(52341);
 
             // Create the connection
-            var connection = provider.CreateClient(IPAddress.Parse(address));
+            using var connection = provider.CreateClient(IPAddress.Parse(address));
 
             // Hook connection dropped
             connection.ConnectionDropped += (s, e) =>

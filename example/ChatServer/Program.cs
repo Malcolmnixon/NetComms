@@ -12,7 +12,7 @@ namespace ChatServer
             var provider = new TcpProvider(52341);
 
             // Create the server
-            var server = provider.CreateServer();
+            using var server = provider.CreateServer();
 
             // Hook new connections
             server.NewConnection += (s, e) =>
