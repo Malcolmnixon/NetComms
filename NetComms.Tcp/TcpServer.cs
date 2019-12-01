@@ -138,30 +138,37 @@ namespace NetComms.Tcp
                 if (!_socket.Poll(1000, SelectMode.SelectRead))
                     continue;
 
-                // Accept the next connection
-                var socket = _socket.Accept();
-
-                // Create the connection
-                var connection = new TcpConnectionServer(
-                    ((IPEndPoint)socket.RemoteEndPoint).Address,
-                    socket);
-
-                // Add to the set of connections
-                lock (_lock)
+                try
                 {
-                    _connections.Add(connection);
+                    // Accept the next connection
+                    var socket = _socket.Accept();
+
+                    // Create the connection
+                    var connection = new TcpConnectionServer(
+                        ((IPEndPoint)socket.RemoteEndPoint).Address,
+                        socket);
+
+                    // Add to the set of connections
+                    lock (_lock)
+                    {
+                        _connections.Add(connection);
+                    }
+
+                    // Subscribe to events
+                    connection.ConnectionDropped += OnConnectionDropped;
+                    connection.Notification += OnNotification;
+                    connection.Transaction += OnTransaction;
+
+                    // Report the new connection
+                    NewConnection?.Invoke(this, new ConnectionEventArgs(connection));
+
+                    // Start the connection
+                    connection.Start();
                 }
-
-                // Subscribe to events
-                connection.ConnectionDropped += OnConnectionDropped;
-                connection.Notification += OnNotification;
-                connection.Transaction += OnTransaction;
-
-                // Report the new connection
-                NewConnection?.Invoke(this, new ConnectionEventArgs(connection));
-
-                // Start the connection
-                connection.Start();
+                catch (SocketException)
+                {
+                    // Happens if accepting fails (problem with client)
+                }
             }
         }
 
