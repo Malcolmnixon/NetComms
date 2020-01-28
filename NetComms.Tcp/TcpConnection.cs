@@ -44,8 +44,8 @@ namespace NetComms.Tcp
         /// <summary>
         /// Initializes a new instance of the TcpConnection class
         /// </summary>
-        /// <param name="tagBase">Base of transaction tags</param>
         /// <param name="address">Associated address</param>
+        /// <param name="tagBase">Base of transaction tags</param>
         protected TcpConnection(IPAddress address, int tagBase)
         {
             Address = address;

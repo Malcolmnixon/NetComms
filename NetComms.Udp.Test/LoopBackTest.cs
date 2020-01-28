@@ -4,7 +4,7 @@ using System.Net;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace NetComms.Tcp.Test
+namespace NetComms.Udp.Test
 {
     [TestClass]
     public class LoopBackTest
@@ -13,7 +13,7 @@ namespace NetComms.Tcp.Test
         public void TestClientNotification()
         {
             // Create server and client
-            var provider = new TcpProvider(41249);
+            var provider = new UdpProvider(41249);
             using var server = provider.CreateServer();
             using var client = provider.CreateClient(IPAddress.Loopback);
 
@@ -29,9 +29,9 @@ namespace NetComms.Tcp.Test
             Thread.Sleep(1000);
 
             // Send three messages to server
-            client.SendNotification(new byte[] {1, 2, 3});
-            client.SendNotification(new byte[] {4, 5, 6});
-            client.SendNotification(new byte[] {7, 8, 9});
+            client.SendNotification(new byte[] { 1, 2, 3 });
+            client.SendNotification(new byte[] { 4, 5, 6 });
+            client.SendNotification(new byte[] { 7, 8, 9 });
 
             // Sleep 1 second for messages to arrive
             Thread.Sleep(1000);
@@ -41,16 +41,16 @@ namespace NetComms.Tcp.Test
             client.Dispose();
 
             Assert.AreEqual(3, notifications.Count);
-            Assert.IsTrue(notifications[0].SequenceEqual(new byte[] {1, 2, 3}));
-            Assert.IsTrue(notifications[1].SequenceEqual(new byte[] {4, 5, 6}));
-            Assert.IsTrue(notifications[2].SequenceEqual(new byte[] {7, 8, 9}));
+            Assert.IsTrue(notifications[0].SequenceEqual(new byte[] { 1, 2, 3 }));
+            Assert.IsTrue(notifications[1].SequenceEqual(new byte[] { 4, 5, 6 }));
+            Assert.IsTrue(notifications[2].SequenceEqual(new byte[] { 7, 8, 9 }));
         }
 
         [TestMethod]
         public void TestServerNotification()
         {
             // Create server and client
-            var provider = new TcpProvider(41249);
+            var provider = new UdpProvider(41249);
             using var server = provider.CreateServer();
             using var client = provider.CreateClient(IPAddress.Loopback);
 

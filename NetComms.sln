@@ -11,7 +11,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatServer", "example\ChatS
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChatClient", "example\ChatClient\ChatClient.csproj", "{CB75D8A5-E97C-4257-B363-7187051C4FD7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetComms.Tcp.Test", "NetComms.Tcp.Test\NetComms.Tcp.Test.csproj", "{88DBC0BE-1875-4EE6-BBE6-48E7187FE9E2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetComms.Tcp.Test", "NetComms.Tcp.Test\NetComms.Tcp.Test.csproj", "{88DBC0BE-1875-4EE6-BBE6-48E7187FE9E2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetComms.Udp", "NetComms.Udp\NetComms.Udp.csproj", "{E2D99F2A-921A-4C1F-8A3B-EBA779D2281E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetComms.Udp.Test", "NetComms.Udp.Test\NetComms.Udp.Test.csproj", "{57BF39A7-1ED7-40D7-AEC6-AC455AFD4AAF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +43,14 @@ Global
 		{88DBC0BE-1875-4EE6-BBE6-48E7187FE9E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{88DBC0BE-1875-4EE6-BBE6-48E7187FE9E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{88DBC0BE-1875-4EE6-BBE6-48E7187FE9E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2D99F2A-921A-4C1F-8A3B-EBA779D2281E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2D99F2A-921A-4C1F-8A3B-EBA779D2281E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2D99F2A-921A-4C1F-8A3B-EBA779D2281E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2D99F2A-921A-4C1F-8A3B-EBA779D2281E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57BF39A7-1ED7-40D7-AEC6-AC455AFD4AAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57BF39A7-1ED7-40D7-AEC6-AC455AFD4AAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57BF39A7-1ED7-40D7-AEC6-AC455AFD4AAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57BF39A7-1ED7-40D7-AEC6-AC455AFD4AAF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
