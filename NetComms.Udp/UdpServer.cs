@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace NetComms.Udp
@@ -112,6 +113,17 @@ namespace NetComms.Udp
                 ReceiveBufferSize = 262144
             };
 
+            // Fix windows socket issues with UDP packets that may not be received
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                const int SIO_UDP_CONNRESET = -1744830452;
+                _socket.IOControl(
+                    (IOControlCode) SIO_UDP_CONNRESET,
+                    new byte[] {0, 0, 0, 0},
+                    null
+                );
+            }
+
             // Bind to the port on any address
             _socket.Bind(new IPEndPoint(IPAddress.IPv6Any, _port));
 
@@ -173,27 +185,38 @@ namespace NetComms.Udp
                 // Read the next packet
                 var packet = new byte[32768];
                 var remoteEndPoint = new IPEndPoint(IPAddress.Any, 0) as EndPoint;
-                var packetLen = _socket.ReceiveFrom(packet, ref remoteEndPoint);
+                int packetLen;
+                try
+                {
+                    packetLen = _socket.ReceiveFrom(packet, ref remoteEndPoint);
+                }
+                catch (SocketException)
+                {
+                    continue;
+                }
 
                 // Get the remote end-point
                 var remoteIpEndPoint = (IPEndPoint) remoteEndPoint;
 
                 // Process the connection
-                lock (_lock)
                 {
-                    if (!_connections.TryGetValue(remoteIpEndPoint, out var connection))
+                    UdpConnectionServer connection;
+                    lock (_lock)
                     {
-                        // Create and save the new connection
-                        connection = new UdpConnectionServer(remoteIpEndPoint, _socket, _probes);
-                        _connections.Add(remoteIpEndPoint, connection);
+                        if (!_connections.TryGetValue(remoteIpEndPoint, out connection))
+                        {
+                            // Create and save the new connection
+                            connection = new UdpConnectionServer(remoteIpEndPoint, _socket, _probes);
+                            _connections.Add(remoteIpEndPoint, connection);
 
-                        // Subscribe to events
-                        connection.ConnectionDropped += OnConnectionDropped;
-                        connection.Notification += OnNotification;
-                        connection.Transaction += OnTransaction;
+                            // Subscribe to events
+                            connection.ConnectionDropped += OnConnectionDropped;
+                            connection.Notification += OnNotification;
+                            connection.Transaction += OnTransaction;
 
-                        // Report the new connection
-                        NewConnection?.Invoke(this, new ConnectionEventArgs(connection));
+                            // Report the new connection
+                            NewConnection?.Invoke(this, new ConnectionEventArgs(connection));
+                        }
                     }
 
                     // Have the connection process the received packet

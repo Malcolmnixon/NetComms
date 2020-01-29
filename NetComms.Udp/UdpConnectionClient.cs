@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace NetComms.Udp
@@ -11,11 +12,6 @@ namespace NetComms.Udp
     /// </summary>
     internal sealed class UdpConnectionClient : UdpConnection
     {
-        /// <summary>
-        /// Server port to connect to
-        /// </summary>
-        private readonly int _port;
-
         /// <summary>
         /// Keep-alive interval
         /// </summary>
@@ -39,7 +35,6 @@ namespace NetComms.Udp
         /// <param name="interval">Keep-alive interval</param>
         public UdpConnectionClient(IPEndPoint endPoint, int probes, long interval) : base(endPoint, probes, 0x10000000)
         {
-            _port = endPoint.Port;
             _interval = interval;
         }
 
@@ -70,10 +65,21 @@ namespace NetComms.Udp
             try
             {
                 // Create the TCP socket
-                Socket = new Socket(Address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+                Socket = new Socket(Address.AddressFamily, SocketType.Dgram, ProtocolType.Udp)
+                {
+                    ReceiveBufferSize = 262144
+                };
 
-                // Connect to the server
-                Socket.Connect(Address, _port);
+                // Fix windows socket issues with UDP packets that may not be received
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    const int SIO_UDP_CONNRESET = -1744830452;
+                    Socket.IOControl(
+                        (IOControlCode)SIO_UDP_CONNRESET,
+                        new byte[] { 0, 0, 0, 0 },
+                        null
+                    );
+                }
 
                 // Send a ping
                 SendPing();
@@ -123,7 +129,15 @@ namespace NetComms.Udp
                 // Read the next packet
                 var packet = new byte[32768];
                 var remoteEndPoint = new IPEndPoint(IPAddress.Any, 0) as EndPoint;
-                var packetLen = Socket.ReceiveFrom(packet, ref remoteEndPoint);
+                int packetLen;
+                try
+                {
+                    packetLen = Socket.ReceiveFrom(packet, ref remoteEndPoint);
+                }
+                catch (SocketException)
+                {
+                    continue;
+                }
 
                 // Process the packet
                 ProcessPacket(packet, packetLen);
