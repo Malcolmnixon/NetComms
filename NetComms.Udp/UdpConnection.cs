@@ -11,6 +11,16 @@ namespace NetComms.Udp
     internal abstract class UdpConnection : IConnection
     {
         /// <summary>
+        /// Remote end-point
+        /// </summary>
+        private readonly IPEndPoint _endPoint;
+
+        /// <summary>
+        /// Keep-alive probes
+        /// </summary>
+        private readonly int _probes;
+
+        /// <summary>
         /// Lock object
         /// </summary>
         private readonly object _lock = new object();
@@ -26,24 +36,26 @@ namespace NetComms.Udp
         private readonly Dictionary<int, Action<byte[]>> _transactions = new Dictionary<int, Action<byte[]>>();
 
         /// <summary>
-        /// Remote end-point
-        /// </summary>
-        private readonly IPEndPoint _endPoint;
-
-        /// <summary>
         /// Next tag to allocate
         /// </summary>
         private int _tagNext;
 
         /// <summary>
+        /// Count of missed probes
+        /// </summary>
+        private int _probesMissed;
+
+        /// <summary>
         /// Initializes a new instance of the TcpConnection class
         /// </summary>
         /// <param name="endPoint">Remote end-point</param>
+        /// <param name="probes">Count of keep-alive probes</param>
         /// <param name="tagBase">Base of transaction tags</param>
-        protected UdpConnection(IPEndPoint endPoint, int tagBase)
+        protected UdpConnection(IPEndPoint endPoint, int probes, int tagBase)
         {
             // Save the end-point
             _endPoint = endPoint;
+            _probes = probes;
 
             // Populate 10 rotating transaction tags (more will be allocated as needed)
             _tagNext = tagBase;
@@ -163,8 +175,26 @@ namespace NetComms.Udp
             Socket.SendTo(packetData, _endPoint);
         }
 
+        internal bool ProcessProbeTick()
+        {
+            // Detect connection dropped by missed probes
+            if (_probesMissed++ > _probes)
+            {
+                // Report connection dropped
+                ConnectionDropped?.Invoke(this, new ConnectionEventArgs(this));
+                return true;
+            }
+
+            // Send a ping
+            SendPing();
+            return false;
+        }
+
         internal void ProcessPacket(byte[] packet, int packetLen)
         {
+            // Any incoming packet clears the probes
+            _probesMissed = 0;
+
             // Decode the length
             var len = BitConverter.ToInt32(packet, 0);
             if (len != packetLen - 8)

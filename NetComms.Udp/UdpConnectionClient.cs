@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -16,6 +17,11 @@ namespace NetComms.Udp
         private readonly int _port;
 
         /// <summary>
+        /// Keep-alive interval
+        /// </summary>
+        private readonly long _interval;
+
+        /// <summary>
         /// Cancellation
         /// </summary>
         private readonly CancellationTokenSource _cancel = new CancellationTokenSource();
@@ -29,9 +35,12 @@ namespace NetComms.Udp
         /// Initializes a new instance of the UdpConnectionClient class
         /// </summary>
         /// <param name="endPoint">Server end-point</param>
-        public UdpConnectionClient(IPEndPoint endPoint) : base(endPoint, 0x10000000)
+        /// <param name="probes">Count of keep-alive probes</param>
+        /// <param name="interval">Keep-alive interval</param>
+        public UdpConnectionClient(IPEndPoint endPoint, int probes, long interval) : base(endPoint, probes, 0x10000000)
         {
             _port = endPoint.Port;
+            _interval = interval;
         }
 
         public override void Dispose()
@@ -86,9 +95,27 @@ namespace NetComms.Udp
 
         private void ProcessConnection()
         {
+            // Stopwatch for expiration
+            var sw = Stopwatch.StartNew();
+
+            // Next probe time
+            var nextProbe = sw.ElapsedMilliseconds + _interval;
+
             // Loop handling incoming connections
             while (!_cancel.IsCancellationRequested)
             {
+                // Handle probes
+                var now = sw.ElapsedMilliseconds;
+                if (now >= nextProbe)
+                {
+                    // Calculate the next probe time
+                    nextProbe = now + _interval;
+
+                    // Process the probe and finish on disconnect
+                    if (ProcessProbeTick())
+                        return;
+                }
+
                 // Wait for incoming connection
                 if (!Socket.Poll(1000, SelectMode.SelectRead))
                     continue;

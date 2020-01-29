@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -13,14 +14,24 @@ namespace NetComms.Udp
     internal class UdpServer : IServer
     {
         /// <summary>
-        /// Lock object
-        /// </summary>
-        private readonly object _lock = new object();
-
-        /// <summary>
         /// UDP port
         /// </summary>
         private readonly int _port;
+
+        /// <summary>
+        /// Keep alive probe count
+        /// </summary>
+        private readonly int _probes;
+
+        /// <summary>
+        /// Keep alive expiration interval
+        /// </summary>
+        private readonly long _interval;
+
+        /// <summary>
+        /// Lock object
+        /// </summary>
+        private readonly object _lock = new object();
 
         /// <summary>
         /// Cancellation
@@ -46,9 +57,13 @@ namespace NetComms.Udp
         /// Initializes a new instance of the UdpServer class
         /// </summary>
         /// <param name="port">Server port</param>
-        public UdpServer(int port)
+        /// <param name="probes">Keep-alive probes</param>
+        /// <param name="interval">Keep-alive interval</param>
+        public UdpServer(int port, int probes, long interval)
         {
             _port = port;
+            _probes = probes;
+            _interval = interval;
         }
 
         /// <summary>
@@ -129,9 +144,28 @@ namespace NetComms.Udp
 
         private void ProcessServer()
         {
+            // Stopwatch for expiration
+            var sw = Stopwatch.StartNew();
+
+            // Next probe time
+            var nextProbe = sw.ElapsedMilliseconds + _interval;
+
             // Loop handling incoming connections
             while (!_cancel.IsCancellationRequested)
             {
+                // Handle probes
+                var now = sw.ElapsedMilliseconds;
+                if (now >= nextProbe)
+                {
+                    // Calculate the next probe time
+                    nextProbe = now + _interval;
+
+                    // Tick all connections
+                    lock (_lock)
+                        foreach (var connection in _connections.Values.ToList())
+                            connection.ProcessProbeTick();
+                }
+
                 // Wait for incoming connection
                 if (!_socket.Poll(1000, SelectMode.SelectRead))
                     continue;
@@ -150,7 +184,7 @@ namespace NetComms.Udp
                     if (!_connections.TryGetValue(remoteIpEndPoint, out var connection))
                     {
                         // Create and save the new connection
-                        connection = new UdpConnectionServer(remoteIpEndPoint, _socket);
+                        connection = new UdpConnectionServer(remoteIpEndPoint, _socket, _probes);
                         _connections.Add(remoteIpEndPoint, connection);
 
                         // Subscribe to events

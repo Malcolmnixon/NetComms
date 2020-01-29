@@ -22,13 +22,26 @@ namespace NetComms.Udp
         public int Port { get; }
 
         /// <summary>
+        /// Gets or sets the keep-alive probe count
+        /// </summary>
+        public int KeepAliveProbes { get; set; } = 5;
+
+        /// <summary>
+        /// Gets or sets the keep-alive probe interval
+        /// </summary>
+        public long KeepAliveInterval { get; set; } = 3000;
+
+        /// <summary>
         /// Create a new client connection
         /// </summary>
         /// <param name="address">Server address</param>
         /// <returns>New connection</returns>
         public IConnection CreateClient(IPAddress address)
         {
-            return new UdpConnectionClient(new IPEndPoint(address, Port));
+            return new UdpConnectionClient(
+                new IPEndPoint(address, Port), 
+                KeepAliveProbes, 
+                KeepAliveInterval);
         }
 
         /// <summary>
@@ -37,7 +50,10 @@ namespace NetComms.Udp
         /// <returns>New server</returns>
         public IServer CreateServer()
         {
-            return new UdpServer(Port);
+            return new UdpServer(
+                Port, 
+                KeepAliveProbes,
+                KeepAliveInterval);
         }
     }
 }

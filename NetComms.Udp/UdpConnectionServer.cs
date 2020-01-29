@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 namespace NetComms.Udp
 {
     internal sealed class UdpConnectionServer : UdpConnection
     {
-        public UdpConnectionServer(IPEndPoint endPoint, Socket socket) : base(endPoint, 0x20000000)
+        public UdpConnectionServer(IPEndPoint endPoint, Socket socket, int probes) : base(endPoint, probes, 0x20000000)
         {
             Socket = socket;
         }
