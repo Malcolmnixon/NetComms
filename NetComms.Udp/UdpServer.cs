@@ -62,6 +62,7 @@ namespace NetComms.Udp
         /// <param name="interval">Keep-alive interval</param>
         public UdpServer(int port, int probes, long interval)
         {
+            Logger.Log($"UdpServer.UdpServer({port})");
             _port = port;
             _probes = probes;
             _interval = interval;
@@ -102,6 +103,8 @@ namespace NetComms.Udp
 
         public void Start()
         {
+            Logger.Log("UdpServer.Start");
+
             // Fail if already started
             if (_thread != null)
                 throw new InvalidOperationException("Already started");

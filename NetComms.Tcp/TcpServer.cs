@@ -48,6 +48,7 @@ namespace NetComms.Tcp
         /// <param name="port">Server port</param>
         public TcpServer(int port)
         {
+            Logger.Log($"TcpServer.TcpServer({port})");
             _port = port;
         }
 
@@ -86,6 +87,8 @@ namespace NetComms.Tcp
 
         public void Start()
         {
+            Logger.Log("TcpServer.Start");
+
             // Fail if already started
             if (_thread != null)
                 throw new InvalidOperationException("Already started");

@@ -21,6 +21,8 @@ namespace NetComms.Tcp
         /// <param name="port">Server port</param>
         public TcpConnectionClient(IPAddress address, int port) : base(address, 0x10000000)
         {
+            Logger.Log($"TcpConnectionClient.TcpConnectionClient({address}, {port})");
+
             _port = port;
         }
 
@@ -29,6 +31,9 @@ namespace NetComms.Tcp
         /// </summary>
         public override void Start()
         {
+            Logger.Log("TcpConnectionClient.Start - starting connection");
+
+
             // Fail if already connected
             if (Socket != null)
                 throw new InvalidOperationException("Already connected");

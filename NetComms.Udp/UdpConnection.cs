@@ -119,6 +119,7 @@ namespace NetComms.Udp
             var packetData = packet.ToArray();
 
             // Send the packet
+            Logger.Log($"UdpConnection.SendNotification - sending {packetData.Length} to {_endPoint}");
             Socket.SendTo(packetData, _endPoint);
         }
 
@@ -192,6 +193,8 @@ namespace NetComms.Udp
 
         internal void ProcessPacket(byte[] packet, int packetLen)
         {
+            Logger.Log($"UdpConnection.ProcessPacket({packetLen})");
+
             // Any incoming packet clears the probes
             _probesMissed = 0;
 

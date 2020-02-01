@@ -118,6 +118,7 @@ namespace NetComms.Tcp
             var packetData = packet.ToArray();
 
             // Send the packet
+            Logger.Log($"TcpConnection.SendNotification - sending {packetData.Length}");
             Socket.Send(packetData);
         }
 
@@ -253,9 +254,9 @@ namespace NetComms.Tcp
                             new TcpTransaction(this, tag, message)));
                 }
             }
-            catch (SocketException)
+            catch (SocketException ex)
             {
-                // Connection lost
+                Logger.Log($"TcpConnection.ProcessConnection - error {ex}", ex);
             }
 
             // Report connection dropped

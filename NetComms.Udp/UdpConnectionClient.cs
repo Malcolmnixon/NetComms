@@ -35,6 +35,8 @@ namespace NetComms.Udp
         /// <param name="interval">Keep-alive interval</param>
         public UdpConnectionClient(IPEndPoint endPoint, int probes, long interval) : base(endPoint, probes, 0x10000000)
         {
+            Logger.Log($"UdpConnectionClient.UdpConnectionClient({endPoint})");
+
             _interval = interval;
         }
 
@@ -58,6 +60,8 @@ namespace NetComms.Udp
         /// </summary>
         public override void Start()
         {
+            Logger.Log("UdpConnectionClient.Start - starting connection");
+
             // Fail if already connected
             if (Socket != null)
                 throw new InvalidOperationException("Already connected");
@@ -88,8 +92,11 @@ namespace NetComms.Udp
                 _thread = new Thread(ProcessConnection);
                 _thread.Start();
             }
-            catch
+            catch (Exception ex)
             {
+                // Log the exception
+                Logger.Log($"UdpConnectionClient.Start - failed with {ex}", ex);
+
                 // Dispose of the socket
                 Socket?.Dispose();
                 Socket = null;
@@ -101,46 +108,53 @@ namespace NetComms.Udp
 
         private void ProcessConnection()
         {
-            // Stopwatch for expiration
-            var sw = Stopwatch.StartNew();
-
-            // Next probe time
-            var nextProbe = sw.ElapsedMilliseconds + _interval;
-
-            // Loop handling incoming connections
-            while (!_cancel.IsCancellationRequested)
+            try
             {
-                // Handle probes
-                var now = sw.ElapsedMilliseconds;
-                if (now >= nextProbe)
+                // Stopwatch for expiration
+                var sw = Stopwatch.StartNew();
+
+                // Next probe time
+                var nextProbe = sw.ElapsedMilliseconds + _interval;
+
+                // Loop handling incoming connections
+                while (!_cancel.IsCancellationRequested)
                 {
-                    // Calculate the next probe time
-                    nextProbe = now + _interval;
+                    // Handle probes
+                    var now = sw.ElapsedMilliseconds;
+                    if (now >= nextProbe)
+                    {
+                        // Calculate the next probe time
+                        nextProbe = now + _interval;
 
-                    // Process the probe and finish on disconnect
-                    if (ProcessProbeTick())
-                        return;
+                        // Process the probe and finish on disconnect
+                        if (ProcessProbeTick())
+                            return;
+                    }
+
+                    // Wait for incoming connection
+                    if (!Socket.Poll(1000, SelectMode.SelectRead))
+                        continue;
+
+                    // Read the next packet
+                    var packet = new byte[32768];
+                    var remoteEndPoint = new IPEndPoint(IPAddress.Any, 0) as EndPoint;
+                    int packetLen;
+                    try
+                    {
+                        packetLen = Socket.ReceiveFrom(packet, ref remoteEndPoint);
+                    }
+                    catch (SocketException)
+                    {
+                        continue;
+                    }
+
+                    // Process the packet
+                    ProcessPacket(packet, packetLen);
                 }
-
-                // Wait for incoming connection
-                if (!Socket.Poll(1000, SelectMode.SelectRead))
-                    continue;
-
-                // Read the next packet
-                var packet = new byte[32768];
-                var remoteEndPoint = new IPEndPoint(IPAddress.Any, 0) as EndPoint;
-                int packetLen;
-                try
-                {
-                    packetLen = Socket.ReceiveFrom(packet, ref remoteEndPoint);
-                }
-                catch (SocketException)
-                {
-                    continue;
-                }
-
-                // Process the packet
-                ProcessPacket(packet, packetLen);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"UdpConnectionClient.ProcessConnection - error {ex}", ex);
             }
         }
     }
